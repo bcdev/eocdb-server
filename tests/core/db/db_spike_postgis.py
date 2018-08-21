@@ -26,6 +26,7 @@ def initialize_database(conn, cursor):
     print("initialize database ...")
 
     cursor.execute("CREATE TABLE in_situ_point (id SERIAL PRIMARY KEY, location geography(POINT), acquisition_time TIMESTAMP, description varchar);")
+    #cursor.execute("CREATE INDEX in_situ_point_gix ON in_situ_point USING GIST (location);")
     conn.commit()
 
     print("done")
