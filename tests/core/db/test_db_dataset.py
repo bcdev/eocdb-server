@@ -1,21 +1,16 @@
 import datetime
 from unittest import TestCase
 
-from eocdb.core.db.db_dataset import DbDataset
+from tests.helpers import  new_test_db_dataset
+
 
 
 class DbDatsetTest(TestCase):
 
     def setUp(self):
-        self.dataset = DbDataset()
-
-    def test_empty_dataset(self):
-        self.assertEqual(dict(), self.dataset.metadata)
-        self.assertEqual(0, self.dataset.attribute_count)
-        self.assertEqual([], self.dataset.attribute_names)
-
-        self.assertEqual(0, self.dataset.record_count)
-        self.assertEqual([], self.dataset.records)
+        self.dataset = new_test_db_dataset(3)
+        self.dataset._records = []
+        self.dataset._metadata = {}
 
     def test_add_records_and_get(self):
         record_1 = [-38.4, 109.8, 0.266612499]
@@ -34,8 +29,12 @@ class DbDatsetTest(TestCase):
     def test_to_dict_empty(self):
         self.assertEqual({'attributes': [],
                           'geo_locations': [],
+                          'id': None,
                           'metadata': {},
+                          'name': 'dataset-3',  # comes from test-dataset
                           'records': [],
+                          'path': 'relative_path-3',    # comes from test-dataset
+                          'status': 'new',
                           'times': []}, self.dataset.to_dict())
 
     def test_to_dict(self):
@@ -52,8 +51,12 @@ class DbDatsetTest(TestCase):
 
         self.assertEqual({'attributes': ['lat', 'lon', 'chl'],
                           'geo_locations': [{'lat': 18.076, 'lon': -107.23}],
+                          'id': None,
                           'metadata': {'key_1': 'value_1', 'key_2': 'value_2'},
+                          'name': 'dataset-3',
                           'records': [[-39.4, 110.8, 0.267612499], [-39.5, 110.9, 0.367612499]],
+                          'path': 'relative_path-3',
+                          'status': 'new',
                           'times': ['2008-10-04T15:22:51']},
                            self.dataset.to_dict())
 

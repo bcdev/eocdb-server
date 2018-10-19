@@ -1,36 +1,74 @@
+# The MIT License (MIT)
+# Copyright (c) 2018 by EUMETSAT
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the "Software"), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+# of the Software, and to permit persons to whom the Software is furnished to do
+# so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import datetime
 import re
+from typing import List, Sequence, Any
 
-from eocdb.core.db.db_dataset import DbDataset
+from ..db.db_dataset import DbDataset
+from ..models.dataset import Dataset
 
 EOF = 'end_of_file'
 
 
-class SbFileReader():
+class SbFileReader:
 
     def __init__(self):
-        self.lines = []
-        self.line_index = 0
+        self._lines = []
+        self._line_index = 0
 
-    def read(self, filename):
-        with open(filename, 'r') as file:
-            self.line_index = 0
-            lines = file.readlines()
-            return self._parse(lines)
+    def read(self, file_obj: Any) -> Dataset:
+        """
+        Read a Dataset from plain text file in SeaBASS format.
 
-    def _parse(self, lines):
-        dataset = DbDataset()
-        self.lines = lines
+        :param file_obj: A path or a file-like object.
+        :return: A Dataset
+        """
+        self._line_index = 0
+        if hasattr(file_obj, "readlines"):
+            return self._parse(file_obj.readlines())
+        else:
+            with open(file_obj, 'r') as fp:
+                return self._parse(fp.readlines())
+
+    def _parse(self, lines: Sequence[str]) -> Dataset:
+
+        self._lines = lines
 
         self.handle_header = None
 
+        metadata = {}
         line = self._next_line()
         if '/begin_header' in line.lower():
             self.handle_header = True
-            self._parse_header(dataset)
+            metadata = self._parse_header()
 
-        self._interprete_header(dataset)
-        self._parse_records(dataset)
+        field_list = self._extract_field_list(metadata)
+        records = self._parse_records()
+        dataset = DbDataset("relative_path",
+                            "name",
+                            "new",
+                            metadata,
+                            records)
+        dataset.set_attributes(field_list)
         self._extract_searchfields(dataset)
 
         if self.handle_header is None or self.handle_header is True:
@@ -39,14 +77,15 @@ class SbFileReader():
         return dataset
 
     def _next_line(self) -> str:
-        if self.line_index < len(self.lines):
-            line = self.lines[self.line_index]
-            self.line_index += 1
+        if self._line_index < len(self._lines):
+            line = self._lines[self._line_index]
+            self._line_index += 1
             return line
 
         return EOF
 
-    def _parse_header(self, dataset):
+    def _parse_header(self) -> dict:
+        metadata = dict()
         while True:
             line = self._next_line()
             if line == EOF:
@@ -58,7 +97,7 @@ class SbFileReader():
 
             # done with header
             if '/end_header' in line.lower():
-                if self.handle_header == True:
+                if self.handle_header:
                     self.handle_header = False
                     break
                 else:
@@ -66,7 +105,7 @@ class SbFileReader():
 
             # split line, trim and remove leading slash
             line = re.sub("[\r\n]+", '', line).strip()
-            if not '=' in line:
+            if '=' not in line:
                 # then it is no key/value pair - skip this line tb 2018-09-20
                 continue
 
@@ -76,16 +115,17 @@ class SbFileReader():
             if key == 'fields':
                 self.field_list = value
             else:
-                dataset.add_metadatum(key, value)
+                metadata.update({key: value})
 
-    def _interprete_header(self, dataset):
-        self._delimiter_regex = self._extract_delimiter_regex(dataset)
+        return metadata
+
+    def _extract_field_list(self, metadata):
+        self._delimiter_regex = self._extract_delimiter_regex(metadata)
 
         if self.field_list is None:
             raise IOError('Missing header tag "fields"')
 
-        variable_names = self.field_list.lower().split(',')
-        dataset.add_attributes(variable_names)
+        return self.field_list.lower().split(',')
 
     def _extract_searchfields(self, dataset):
         self._extract_geo_locations(dataset)
@@ -167,7 +207,16 @@ class SbFileReader():
         lat = self._extract_angle(north_lat_string)
         dataset.add_geo_location(lon, lat)
 
-    def _parse_records(self, dataset):
+    @classmethod
+    def extract_value_if_present(cls, key, metadata):
+        if key in metadata:
+            return metadata[key]
+        else:
+            return "n_a"
+
+    def _parse_records(self) -> List[List[Dataset.Field]]:
+        records = []
+
         while True:
             line = self._next_line()
             if line == EOF:
@@ -188,13 +237,16 @@ class SbFileReader():
                 else:
                     record.append(token)
 
-            dataset.add_record(record)
+            records.append(record)
 
-    def _extract_delimiter_regex(self, dataset):
-        if not 'delimiter' in dataset.metadata:
+        return records
+
+    @classmethod
+    def _extract_delimiter_regex(cls, metadata):
+        if 'delimiter' not in metadata:
             raise IOError('Missing delimiter tag in header')
 
-        delimiter = dataset.metadata['delimiter']
+        delimiter = metadata['delimiter']
         if delimiter == 'comma':
             return ',+'
         elif delimiter == 'space':
@@ -204,31 +256,35 @@ class SbFileReader():
         else:
             raise IOError('Invalid delimiter-value in header')
 
-    def _is_number(self, token):
+    @classmethod
+    def _is_number(cls, token):
         try:
             float(token)
             return True
         except ValueError:
             return False
 
-    def _is_integer(self, token):
+    @classmethod
+    def _is_integer(cls, token):
         try:
             int(token)
             return True
         except ValueError:
             return False
 
-    def _extract_angle(self, angle_str):
+    @classmethod
+    def _extract_angle(cls, angle_str):
         parse_str = angle_str
         if '[' in angle_str:
             unit_index = parse_str.find('[')
             parse_str = angle_str[0:unit_index]
         return float(parse_str)
 
-    def _extract_date(self, date_str, time_str, check_gmt=False):
+    @classmethod
+    def _extract_date(cls, date_str, time_str, check_gmt=False):
         time_str = time_str.upper()
         if check_gmt:
-            if not '[GMT]' in time_str:
+            if '[GMT]' not in time_str:
                 raise IOError("No time zone given. Required all times be expressed as [GMT]")
 
         year = int(date_str[0:4])

@@ -24,7 +24,7 @@ import unittest
 
 from eocdb.core.models.issue import Issue
 from eocdb.ws.controllers.datasets import *
-from ..helpers import new_test_service_context, new_test_dataset
+from tests.helpers import new_test_service_context, new_test_dataset
 
 
 class DatasetsTest(unittest.TestCase):
@@ -51,7 +51,7 @@ class DatasetsTest(unittest.TestCase):
         result_1 = add_dataset(self.ctx, dataset=dataset_1)
         self.assertIsInstance(result_1, DatasetRef)
         self.assertIsNotNone(result_1.id)
-        self.assertEqual(dataset_1.bucket, result_1.bucket)
+        self.assertEqual(dataset_1.path, result_1.path)
         self.assertEqual(dataset_1.name, result_1.name)
 
         dataset_2 = new_test_dataset(8)
@@ -59,7 +59,7 @@ class DatasetsTest(unittest.TestCase):
         self.assertIsInstance(result_2, DatasetRef)
         self.assertIsNotNone(result_2.id)
         self.assertNotEqual(result_1.id, result_2.id)
-        self.assertEqual(dataset_2.bucket, result_2.bucket)
+        self.assertEqual(dataset_2.path, result_2.path)
         self.assertEqual(dataset_2.name, result_2.name)
 
     def test_find_datasets(self):
@@ -134,27 +134,27 @@ class DatasetsTest(unittest.TestCase):
             delete_dataset(self.ctx, "api_key", dataset_id)
 
     @unittest.skip('not implemented yet')
-    def test_get_datasets_in_bucket(self):
+    def test_get_datasets_in_path(self):
         # TODO (generated): set required parameters
         affil = None
         project = None
         cruise = None
         # noinspection PyTypeChecker
-        result = get_datasets_in_bucket(self.ctx, affil, project, cruise)
+        result = get_datasets_in_path(self.ctx, affil, project, cruise)
         self.assertIsInstance(result, list)
         # TODO (generated): set expected result
         expected_result = []
         self.assertEqual(expected_result, result)
 
     @unittest.skip('not implemented yet')
-    def test_get_dataset_by_bucket_and_name(self):
+    def test_get_dataset_by_name(self):
         # TODO (generated): set required parameters
         affil = None
         project = None
         cruise = None
         name = None
         # noinspection PyTypeChecker
-        result = get_dataset_by_bucket_and_name(self.ctx, affil, project, cruise, name)
+        result = get_dataset_by_name(self.ctx, affil, project, cruise, name)
         # TODO (generated): set expected result
         expected_result = None
         self.assertEqual(expected_result, result)

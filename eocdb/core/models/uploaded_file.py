@@ -19,50 +19,42 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-
 from ..asserts import assert_not_none
 from ..model import Model
 
 
-class Bucket(Model):
-    """
-    The Bucket model.
-    """
-
-    def __init__(self,
-                 affil: str,
-                 project: str,
-                 cruise: str):
-        assert_not_none(affil, name='affil')
-        assert_not_none(project, name='project')
-        assert_not_none(cruise, name='cruise')
-        self._affil = affil
-        self._project = project
-        self._cruise = cruise
+class UploadedFile(Model):
+    def __init__(self, filename: str, content_type: str, body: bytes):
+        assert_not_none(filename, name="filename")
+        assert_not_none(content_type, name="content_type")
+        assert_not_none(body, name="body")
+        self._filename = filename
+        self._content_type = content_type
+        self._body = body
 
     @property
-    def affil(self) -> str:
-        return self._affil
+    def filename(self) -> str:
+        return self._filename
 
-    @affil.setter
-    def affil(self, value: str):
-        assert_not_none(value, name='value')
-        self._affil = value
-
-    @property
-    def project(self) -> str:
-        return self._project
-
-    @project.setter
-    def project(self, value: str):
-        assert_not_none(value, name='value')
-        self._project = value
+    @filename.setter
+    def filename(self, value: str):
+        assert_not_none(value, name="value")
+        self._filename = value
 
     @property
-    def cruise(self) -> str:
-        return self._cruise
+    def content_type(self) -> str:
+        return self._content_type
 
-    @cruise.setter
-    def cruise(self, value: str):
-        assert_not_none(value, name='value')
-        self._cruise = value
+    @content_type.setter
+    def content_type(self, value: str):
+        assert_not_none(value, name="value")
+        self._content_type = value
+
+    @property
+    def body(self) -> bytes:
+        return self._body
+
+    @body.setter
+    def body(self, value: bytes):
+        assert_not_none(value, name="value")
+        self._body = value

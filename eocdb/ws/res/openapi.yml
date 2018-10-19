@@ -65,13 +65,13 @@ paths:
       tags:
         - Store
       summary: Batch mode upload of files
-      description: Upload a ZIP file of datasets and optionally documentaion files and insert them into the store.
+      description: Upload datasets and documentation files and insert them into the store.
       operationId: uploadStoreFiles
       requestBody:
         $ref: '#/components/requestBodies/FileUpload'
       responses:
         '200':
-          description: Successful operation.
+          $ref: '#/components/responses/DatasetValidationResults'
         '400':
           description: Invalid request.
       security:
@@ -108,7 +108,7 @@ paths:
             default: false
       responses:
         '200':
-          $ref: '#/components/responses/FileDownload'
+          $ref: '#/components/responses/BinaryFileContent'
         '400':
           description: Invalid query value(s).
   # TODO by forman: address publishing/hiding datasets
@@ -249,9 +249,9 @@ paths:
     get:
       tags:
         - Datasets
-      summary: Get all datasets for bucket
-      description: Returns all dataset references for given affil, project, and cruise.
-      operationId: getDatasetsInBucket
+      summary: Get all datasets for path
+      description: Returns all dataset references for given path=affil/project/cruise.
+      operationId: getDatasetsInPath
       parameters:
         - $ref: "#/components/parameters/affilParam"
         - $ref: "#/components/parameters/projectParam"
@@ -268,9 +268,9 @@ paths:
     get:
       tags:
         - Datasets
-      summary: Get dataset file from bucket
-      description: Gets a dataset file for given affil, project, cruise, and dataset name.
-      operationId: getDatasetByBucketAndName
+      summary: Get dataset file from path
+      description: Gets a dataset file for given path=affil/project/cruise.
+      operationId: getDatasetByName
       parameters:
         - $ref: "#/components/parameters/affilParam"
         - $ref: "#/components/parameters/projectParam"
@@ -278,7 +278,7 @@ paths:
         - $ref: "#/components/parameters/datasetNameParam"
       responses:
         '200':
-          $ref: '#/components/responses/FileDownload'
+          $ref: '#/components/responses/TextFileContent'
         '400':
           description: Invalid path.
         '404':
@@ -292,7 +292,7 @@ paths:
       tags:
         - DocFiles
       summary: Add documentation file
-      description: Adds a new documentation file for given affil, project, cruise, and file name.
+      description: Adds a new documentation file for given path=affil/project/cruise.
       operationId: addDocFile
       requestBody:
         $ref: '#/components/requestBodies/FileUpload'
@@ -307,7 +307,7 @@ paths:
       tags:
         - DocFiles
       summary: Update documentation file
-      description: Updates an existing documentation file.
+      description: Updates an existing documentation file for given path=affil/project/cruise.
       operationId: updateDocFile
       requestBody:
         $ref: '#/components/requestBodies/FileUpload'
@@ -322,9 +322,9 @@ paths:
     get:
       tags:
         - DocFiles
-      summary: Get documentation files for bucket
-      description: Get documentation file references for given affil, project, and cruise.
-      operationId: getDocFilesInBucket
+      summary: Get documentation files for path
+      description: Get documentation file references for given path=affil/project/cruise.
+      operationId: getDocFilesInPath
       parameters:
         - $ref: "#/components/parameters/affilParam"
         - $ref: "#/components/parameters/projectParam"
@@ -340,9 +340,9 @@ paths:
     get:
       tags:
         - DocFiles
-      summary: Get documentation file for bucket
-      description: Downloads documentation file for given affil, project, cruise, and file name.
-      operationId: downloadDocFile
+      summary: Get documentation file for path
+      description: Gets binary documentation file for given path=affil/project/cruise.
+      operationId: getDocFileByName
       parameters:
         - $ref: "#/components/parameters/affilParam"
         - $ref: "#/components/parameters/projectParam"
@@ -350,7 +350,7 @@ paths:
         - $ref: "#/components/parameters/docFileNameParam"
       responses:
         '200':
-          $ref: '#/components/responses/FileDownload'
+          $ref: '#/components/responses/BinaryFileContent'
         '400':
           description: Invalid path.
         '404':
@@ -358,8 +358,8 @@ paths:
     delete:
       tags:
         - DocFiles
-      summary: Delete documentation file from bucket
-      description: Deletes a documentation file for given affil, project, cruise, and file name.
+      summary: Delete documentation file from path
+      description: Deletes a documentation file for given path=affil/project/cruise.
       operationId: deleteDocFile
       parameters:
         - $ref: "#/components/parameters/affilParam"
@@ -759,6 +759,10 @@ components:
           items:
             $ref: '#/components/schemas/Issue'
           description: Validation issues. Will be empty if status is OK.
+    DatasetValidationResults:
+      type: object
+      additionalProperties:
+        $ref: '#/components/schemas/DatasetValidationResult'
     Issue:
       type: object
       required:
@@ -799,7 +803,7 @@ components:
     Dataset:
       type: object
       required:
-        - bucket
+        - path
         - name
         - status
         - metadata
@@ -807,8 +811,8 @@ components:
       properties:
         id:
           type: string
-        bucket:
-          $ref: '#/components/schemas/Bucket'
+        path:
+          type: string
         name:
           type: string
         status:
@@ -831,38 +835,24 @@ components:
       type: object
       required:
         - id
-        - bucket
+        - path
         - name
       properties:
         id:
           type: string
-        bucket:
-          $ref: '#/components/schemas/Bucket'
+        path:
+          type: string
         name:
           type: string
     DocFileRef:
       type: object
       required:
-        - bucket
+        - path
         - name
       properties:
-        bucket:
-          $ref: '#/components/schemas/Bucket'
+        path:
+          type: string
         name:
-          type: string
-    # TODO by forman: is "Bucket" what we need?
-    Bucket:
-      type: object
-      required:
-        - affil
-        - project
-        - cruise
-      properties:
-        affil:
-          type: string
-        project:
-          type: string
-        cruise:
           type: string
   requestBodies:
     Dataset:
@@ -889,20 +879,16 @@ components:
           schema:
             type: object
             properties:
-              # Current user
               userName:
                 type: string
-              # Bucket info
-              affil:
+                description: "Current user."
+              path:
                 type: string
-              project:
-                type: string
-              cruise:
-                type: string
-              # The file to be uploaded
+                description: "Target path into store given as affil/project/cruise."
               fileName:
                 type: string
                 format: binary
+                description: "File name."
   responses:
     DatasetQueryResult:
       description: Successful operation.
@@ -916,6 +902,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/DatasetValidationResult'
+    DatasetValidationResults:
+      description: Successful operation.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DatasetValidationResults'
     Dataset:
       description: Successful operation.
       content:
@@ -950,7 +942,13 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/User'
-    FileDownload:
+    TextFileContent:
+      description: Successful operation.
+      content:
+        text/plain:
+          schema:
+            type: string
+    BinaryFileContent:
       description: Successful operation.
       content:
         application/octet-stream:
