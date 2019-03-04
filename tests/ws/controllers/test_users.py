@@ -37,10 +37,8 @@ class UsersTest(unittest.TestCase):
         expected_result = {
             'id': 1,
             'name': 'scott',
-            'email': 'bruce.scott@gmail.com',
             'first_name': 'Bruce',
             'last_name': 'Scott',
-            'phone': '+34 5678901234',
             'roles': ['submit', 'admin']
         }
         self.assertEqual(expected_result, result)
@@ -49,10 +47,8 @@ class UsersTest(unittest.TestCase):
         expected_result = {
             'id': 1,
             'name': 'scott',
-            'email': 'bruce.scott@gmail.com',
             'first_name': 'Bruce',
             'last_name': 'Scott',
-            'phone': '+34 5678901234',
             'roles': ['submit', 'admin']
         }
         self.assertEqual(expected_result, result)
@@ -72,11 +68,6 @@ class UsersTest(unittest.TestCase):
         # TODO (generated):  data properties
         # noinspection PyArgumentList
         result = create_user(self.ctx, user=user)
-        self.assertIsNone(result)
-
-    @unittest.skip('not implemented yet')
-    def test_logout_user(self):
-        result = logout_user(self.ctx)
         self.assertIsNone(result)
 
     @unittest.skip('not implemented yet')

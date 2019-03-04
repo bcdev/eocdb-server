@@ -46,6 +46,8 @@ def login_user(ctx: WsContext,
             if actual_password == password:
                 user = dict(**user)
                 del user['password']
+                del user['email']
+                del user['phone']
                 return user
             else:
                 break
@@ -57,13 +59,6 @@ def create_user(ctx: WsContext,
                 user: User):
     # TODO (generated): implement operation create_user()
     raise NotImplementedError('operation create_user() not yet implemented')
-
-
-# noinspection PyUnusedLocal
-def logout_user(ctx: WsContext,
-                user_id: int):
-    # TODO (generated): implement operation logout_user()
-    raise NotImplementedError('operation logout_user() not yet implemented')
 
 
 # noinspection PyUnusedLocal,PyTypeChecker

@@ -41,6 +41,8 @@ from .defaults import DEFAULT_ADDRESS, DEFAULT_PORT, DEFAULT_CONFIG_FILE, DEFAUL
 from .reqparams import RequestParams
 from ..core import UNDEFINED
 
+USER_COOKIE_NAME = "_cur_user"
+
 _LOG = logging.getLogger('eocdb')
 
 
@@ -225,6 +227,9 @@ class WsRequestHandler(RequestHandler):
     def options(self):
         self.set_status(204)
         self.finish()
+
+    def get_current_user(self):
+        return self.get_secure_cookie(USER_COOKIE_NAME)
 
     def on_finish(self):
         """

@@ -725,10 +725,8 @@ class UsersLoginTest(WsTestCase):
         expected_response_data = {
             'id': 1,
             'name': 'scott',
-            'email': 'bruce.scott@gmail.com',
             'first_name': 'Bruce',
             'last_name': 'Scott',
-            'phone': '+34 5678901234',
             'roles': ['submit', 'admin']
         }
         actual_response_data = tornado.escape.json_decode(response.body)
@@ -737,16 +735,35 @@ class UsersLoginTest(WsTestCase):
 
 class UsersLogoutTest(WsTestCase):
 
-    @unittest.skip('not implemented yet')
-    def test_get(self):
-        response = self.fetch(API_URL_PREFIX + "/users/logout", method='GET')
+    def test_get_not_logged_in(self):
+        parameter = "userid=1098765"
+        response = self.fetch(API_URL_PREFIX + f"/users/logout?{parameter}", method='GET')
         self.assertEqual(200, response.code)
         self.assertEqual('OK', response.reason)
 
-        # TODO (generated): set expected_response correctly
-        expected_response_data = {}
-        actual_response_data = tornado.escape.json_decode(response.body)
-        self.assertEqual(expected_response_data, actual_response_data)
+    def test_get_login_and_logout(self):
+        # login
+        credentials = dict(username="scott", password="tiger")
+        body = tornado.escape.json_encode(credentials)
+        response = self.fetch(API_URL_PREFIX + f"/users/login", method='POST', body=body)
+        self.assertEqual(200, response.code)
+
+        parameter = "userid=1"
+        response = self.fetch(API_URL_PREFIX + f"/users/logout?{parameter}", method='GET')
+        self.assertEqual(200, response.code)
+        self.assertEqual('OK', response.reason)
+
+    def test_get_login_and_logout_wrong_id(self):
+        # login
+        credentials = dict(username="scott", password="tiger")
+        body = tornado.escape.json_encode(credentials)
+        response = self.fetch(API_URL_PREFIX + f"/users/login", method='POST', body=body)
+        self.assertEqual(200, response.code)
+
+        parameter = "userid=1098765"
+        response = self.fetch(API_URL_PREFIX + f"/users/logout?{parameter}", method='GET')
+        self.assertEqual(200, response.code)
+        self.assertEqual('OK', response.reason)
 
 
 class UsersIdTest(WsTestCase):

@@ -28,7 +28,7 @@ from ..controllers.service import *
 from ..controllers.store import *
 from ..controllers.users import *
 from ..reqparams import RequestParams
-from ..webservice import WsRequestHandler
+from ..webservice import WsRequestHandler, USER_COOKIE_NAME
 from ...core.models.dataset import Dataset
 from ...core.models.dataset_ids import DatasetIds
 from ...core.models.user import User
@@ -136,8 +136,6 @@ class StoreUploadSubmissionFile(WsRequestHandler):
             self.finish(tornado.escape.json_encode(submission_file.to_dict()))
         else:
             self.set_status(400, reason="No result found")
-
-
 
 
 # noinspection PyAbstractClass,PyShadowingBuiltins
@@ -388,9 +386,18 @@ class UsersLogin(WsRequestHandler):
         credentials = tornado.escape.json_decode(self.request.body)
         username = credentials.get('username')
         password = credentials.get('password')
+
         user_info = login_user(self.ws_context, username=username, password=password)
+        self.set_current_user(user_info)
+
         self.set_header('Content-Type', 'application/json')
         self.finish(tornado.escape.json_encode(user_info))
+
+    def set_current_user(self, user_info: dict):
+        if user_info:
+            self.set_secure_cookie(USER_COOKIE_NAME, tornado.escape.json_encode(user_info))
+        else:
+            self.clear_cookie(USER_COOKIE_NAME)
 
 
 # noinspection PyAbstractClass,PyShadowingBuiltins
@@ -399,7 +406,11 @@ class UsersLogout(WsRequestHandler):
     def get(self):
         """Provide API operation logoutUser()."""
         user_id = self.query.get_param_int('userid')
-        logout_user(self.ws_context, user_id)
+        user_json = self.get_current_user()
+        if user_json:
+            user_info = tornado.escape.json_decode(user_json)
+            if user_info["id"] == user_id:
+                self.clear_cookie(USER_COOKIE_NAME)
         self.finish()
 
 
